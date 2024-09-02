@@ -1,0 +1,145 @@
+// init-mongo.js
+
+// Connect to the admin database to authenticate
+db = db.getSiblingDB('admin');
+
+// Create and switch to the database 'hospital'
+db = db.getSiblingDB('hospital');
+db.config.insert({
+    "queueName": "mosaiq",
+    "hl7Destinations": [{
+        //    "ipAddress": "localhost",
+        //     "port": 5555
+        //},{
+            "ipAddress": "hl7pong",
+            "port": 1337        
+        }
+
+    ],
+    "mapping": {
+        "format": "hl7-2.4",
+        "delimiters": {
+            "fieldSeparator": "|",
+            "componentSeparator": "^",
+            "subcomponentSeparator": "&",
+            "escapeCharacter": "\\",
+            "repetitionCharacter": "~",
+            "segmentSeparator": "\r"
+        },
+        "mappings": {
+            "msh": {
+                "values": [
+                    {
+                        "field": "sending_application",
+                        "component": [0, 1],
+                        "default": "Andes"
+                    },
+                    {
+                        "field": "sending_facility",
+                        "component": [1, 1],
+                        "default": "HPN"
+                    },
+                    {
+                        "field": "receiving_application",
+                        "component": [2, 1],
+                        "default": "MOSAIQ"
+                    },
+                    {
+                        "field": "receiving_facility",
+                        "component": [3, 1],
+                        "default": "HPN"
+                    },
+                    {
+                        "field": "message_type",
+                        "component": [6, 1],
+                        "default": "ADT"
+                    },
+                    {
+                        "field": "message_type_ref",
+                        "component": [6, 2],
+                        "default": "A04"
+                    },
+                    {
+                        "field": "date_time",
+                        "component": [7, 1]
+                    },
+                    {
+                        "field": "processing_id",
+                        "component": [8, 1],
+                        "default": "P"
+                    },
+                    {
+                        "field": "version_id",
+                        "component": [9, 1],
+                        "default": "2.3"
+                    },
+                    {
+                        "field": "country_code",
+                        "component": [14, 1],
+                        "default": "AR"
+                    },
+                    {
+                        "field": "character_set",
+                        "component": [15, 1],
+                        "default": "UTF-8"
+                    }
+                ]
+            },
+            "pid": {
+                "values": [
+                    {
+                        "field": "paciente._id",
+                        "component": [2, 1]
+                    },
+                    {
+                        "field": "paciente.assigning_authority",
+                        "component": [2, 4]
+                    },
+                    {
+                        "field": "paciente.apellido",
+                        "component": [4, 2]
+                    },
+                    {
+                        "field": "paciente.nombre",
+                        "component": [4, 1]
+                    },
+                    {
+                        "field": "paciente.fechaNacimiento",
+                        "component": [6, 1]
+                    },
+                    {
+                        "field": "paciente.sexo",
+                        "component": [7, 1]
+                    }
+                ]
+            }
+        }
+    }
+})
+
+// Insert data into the 'patients' collection
+db.patients.insertMany([
+    {
+        "patient_id": "12345",
+        "name": "John Doe",
+        "age": 30,
+        "gender": "Male",
+        "diagnosis": "Flu",
+        "treatment": "Rest and hydration"
+    },
+    {
+        "patient_id": "67890",
+        "name": "Jane Smith",
+        "age": 25,
+        "gender": "Female",
+        "diagnosis": "Migraine",
+        "treatment": "Painkillers"
+    }
+]);
+
+db.createUser({
+    user: "appuser",
+    pwd: "appsecret",
+    roles: [{ role: "readWrite", db: "hospital" }]
+  })
+  

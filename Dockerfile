@@ -1,0 +1,75 @@
+# docker-compose.yml
+services:
+    rabbitmq:
+      image: rabbitmq:3-management
+      container_name: rabbitmq
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      networks:
+        - app-network
+      volumes:
+        - ./test/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      healthcheck:
+        test: [ "CMD", "nc", "-z", "localhost", "5672" ]
+        interval: 5s
+        timeout: 15s
+        retries: 1
+  
+    # hl7receiver:
+    #   container_name: hl7receiver
+    #   build: ./test/tcp-server
+    #   ports:
+    #     - "5555:5555"
+    #   networks:
+    #     - app-network
+  
+    hisproducer:
+      container_name: hisproducer
+      build: ./test/rabbitmq-producer
+      restart: always
+      depends_on:
+        - rabbitmq
+        - mongodb
+      networks:
+        - app-network
+  
+    andeshl7sender:
+      container_name: hl7sender
+      build: .
+      restart: always
+      depends_on:
+        - rabbitmq
+        - mongodb
+        - hisproducer
+      #  - hl7receiver
+      volumes:
+        - ./config.yaml:/app/config.yaml
+      networks:
+        - app-network
+  
+    hl7pong:
+      container_name: hl7pong
+      image: sergioisidoro/hl7-pong:v0.1.1
+      ports:
+        - "1337:1337"
+      networks:
+        - app-network    
+  
+    mongodb:
+      image: mongo:latest
+      container_name: mongodb
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: root
+        MONGO_INITDB_ROOT_PASSWORD: example
+      volumes:
+        - ./test/data:/docker-entrypoint-initdb.d
+      ports:
+        - "27017:27017"
+      networks:
+        - app-network
+  
+networks:
+  app-network:
+    driver: bridge
+  
