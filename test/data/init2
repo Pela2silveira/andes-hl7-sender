@@ -8,7 +8,7 @@ db = db.getSiblingDB('hospital');
 db.config.insert({
     "queueName": "mosaiq",
     "hl7Destinations": [{
-            "ipAddress": "localhost",
+            "ipAddress": "hl7pong",
             "port": 1337        
         }
     ],
@@ -24,7 +24,7 @@ db.config.insert({
         },
         "mappings": [
             {
-                "segment": "msh",
+                "segment": "MSH",
                 "values": [
                     {
                         "field": "sending_application",
@@ -59,6 +59,7 @@ db.config.insert({
                     {
                         "field": "date_time",
                         "component": [7, 1]
+                        // Aquí podrías agregar un valor por defecto si lo necesitas
                     },
                     {
                         "field": "processing_id",
@@ -83,7 +84,7 @@ db.config.insert({
                 ]
             },
             {
-                "segment": "pid",
+                "segment": "PID",
                 "values": [
                     {
                         "field": "paciente._id",
@@ -118,7 +119,7 @@ db.config.insert({
 // Insert data into the 'patients' collection
 db.patients.insertMany([
     {
-        "patient_id": "12345",
+        "_id": "12345",  // Lo uso como el patient_id
         "name": "John Doe",
         "age": 30,
         "gender": "Male",
@@ -126,7 +127,7 @@ db.patients.insertMany([
         "treatment": "Rest and hydration"
     },
     {
-        "patient_id": "67890",
+        "_id": "67890",  // Lo uso como el patient_id
         "name": "Jane Smith",
         "age": 25,
         "gender": "Female",
@@ -135,9 +136,9 @@ db.patients.insertMany([
     }
 ]);
 
+// Create a user with readWrite role on hospital database
 db.createUser({
     user: "appuser",
     pwd: "appsecret",
     roles: [{ role: "readWrite", db: "hospital" }]
-  })
-  
+})

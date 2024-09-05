@@ -1,16 +1,10 @@
-// init-mongo.js
-
-// Connect to the admin database to authenticate
-db = db.getSiblingDB('admin');
-
-// Create and switch to the database 'hospital'
-db = db.getSiblingDB('hospital');
-db.config.insert({
+{
     "queueName": "mosaiq",
     "hl7Destinations": [{
-            "ipAddress": "localhost",
+            "ipAddress": "hl7pong",
             "port": 1337        
         }
+
     ],
     "mapping": {
         "format": "hl7-2.4",
@@ -113,31 +107,4 @@ db.config.insert({
             }
         ]
     }
-})
-
-// Insert data into the 'patients' collection
-db.patients.insertMany([
-    {
-        "patient_id": "12345",
-        "name": "John Doe",
-        "age": 30,
-        "gender": "Male",
-        "diagnosis": "Flu",
-        "treatment": "Rest and hydration"
-    },
-    {
-        "patient_id": "67890",
-        "name": "Jane Smith",
-        "age": 25,
-        "gender": "Female",
-        "diagnosis": "Migraine",
-        "treatment": "Painkillers"
-    }
-]);
-
-db.createUser({
-    user: "appuser",
-    pwd: "appsecret",
-    roles: [{ role: "readWrite", db: "hospital" }]
-  })
-  
+}

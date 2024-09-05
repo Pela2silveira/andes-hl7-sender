@@ -83,9 +83,9 @@ func generateHL7(mapping Mapping, hisRecord HealthRecord) string {//*bytes.Buffe
     hl7Message.WriteString(mapping.Delimiters.EscapeCharacter)
     hl7Message.WriteString(mapping.Delimiters.RepetitionCharacter)
 
-    for segmentName, segmentMapping := range mapping.Mappings {
-        if segmentName != "msh" {
-            hl7Message.WriteString(strings.ToUpper(segmentName))
+    for _, segment := range mapping.Mappings {
+        if segment.Segment != "msh" {
+            hl7Message.WriteString(strings.ToUpper(segment.Segment))
         }
 
         lastFieldIndex = 0
@@ -93,7 +93,7 @@ func generateHL7(mapping Mapping, hisRecord HealthRecord) string {//*bytes.Buffe
 
         hl7Message.WriteString(mapping.Delimiters.FieldSeparator)
 
-        for _, field := range segmentMapping.Values {
+        for _, field := range segment.Values {
             var componentValue string
             if field.Field == "date_time" {
                 // Insertar la fecha y hora actual en el formato especificado

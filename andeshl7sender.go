@@ -25,37 +25,35 @@ type Config struct {
 } 
 
 type HL7Config struct {
-	QueueName       string           `bson:"queueName"`
-	HL7Destinations []HL7Destination `bson:"hl7Destinations"`
-	Mapping         Mapping          `bson:"mapping"`
+    QueueName       string           `bson:"queueName"`
+    HL7Destinations []HL7Destination `bson:"hl7Destinations"`
+    Mapping         Mapping          `bson:"mapping"`
 }
 
-
-// El Mapeo debe respetar esta estructura
 type Mapping struct {
-    Format     string             `json:"format"`
-    Delimiters Delimiters         `json:"delimiters"`
-    Mappings   map[string]Segment `json:"mappings"`
+    Format     string     `bson:"format"`
+    Delimiters Delimiters `bson:"delimiters"`
+    Mappings   []Segment  `bson:"mappings"` // Cambiado a una lista
 }
-
 
 type Delimiters struct {
-    FieldSeparator        string `json:"fieldSeparator"`
-    ComponentSeparator    string `json:"componentSeparator"`
-    SubcomponentSeparator string `json:"subcomponentSeparator"`
-    EscapeCharacter       string `json:"escapeCharacter"`
-    RepetitionCharacter   string `json:"repetitionCharacter"`
-    SegmentSeparator      string `json:"segmentSeparator"`
+    FieldSeparator        string `bson:"fieldSeparator"`
+    ComponentSeparator    string `bson:"componentSeparator"`
+    SubcomponentSeparator string `bson:"subcomponentSeparator"`
+    EscapeCharacter       string `bson:"escapeCharacter"`
+    RepetitionCharacter   string `bson:"repetitionCharacter"`
+    SegmentSeparator      string `bson:"segmentSeparator"`
 }
 
 type Segment struct {
-    Values []Field `json:"values"`
+    Segment string  `bson:"segment"` // Este campo debe existir
+    Values  []Field `bson:"values"`
 }
 
 type Field struct {
-    Field     string  `json:"field"`
-    Component []int   `json:"component"`
-    Default   string  `json:"default,omitempty"`
+    Field     string `bson:"field"`
+    Component []int  `bson:"component"`
+    Default   string `bson:"default,omitempty"`
 }
 
 func main() {

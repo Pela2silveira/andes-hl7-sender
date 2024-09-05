@@ -22,9 +22,8 @@ db.config.insert({
             "repetitionCharacter": "~",
             "segmentSeparator": "\r"
         },
-        "mappings": [
-            {
-                "segment": "msh",
+        "mappings": {
+            "msh": {
                 "values": [
                     {
                         "field": "sending_application",
@@ -82,8 +81,7 @@ db.config.insert({
                     }
                 ]
             },
-            {
-                "segment": "pid",
+            "pid": {
                 "values": [
                     {
                         "field": "paciente._id",
@@ -111,7 +109,7 @@ db.config.insert({
                     }
                 ]
             }
-        ]
+        }
     }
 })
 
