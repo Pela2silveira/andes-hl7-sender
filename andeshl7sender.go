@@ -30,12 +30,14 @@ type HL7Config struct {
 	Mapping         Mapping          `bson:"mapping"`
 }
 
+
 // El Mapeo debe respetar esta estructura
 type Mapping struct {
     Format     string             `json:"format"`
     Delimiters Delimiters         `json:"delimiters"`
     Mappings   map[string]Segment `json:"mappings"`
 }
+
 
 type Delimiters struct {
     FieldSeparator        string `json:"fieldSeparator"`
