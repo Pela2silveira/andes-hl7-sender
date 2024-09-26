@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "log"
+    "sync"
 )
 
 // El registro de salud tiene formato libre
@@ -15,12 +16,12 @@ type HL7Destination struct {
 }
 
 type Config struct {
-    RabbitmqURI       string    `json:"rabbitmqURI"` 
-	QueueName         string    `json:"queueName"`
-	MongodbURI        string    `json:"mongodbURI"`
-	MongodbDatabase   string    `json:"mongodbDatabase"`
-	MongodbCollection string    `json:"mongodbCollection"`
-	HL7Config         HL7Config `bson:"hl7Config"`
+    RabbitmqURI        string      `json:"rabbitmqURI"` 
+	ConsumerQueueNames []string    `json:"consumerQueueNames"`
+	MongodbURI         string      `json:"mongodbURI"`
+	MongodbDatabase    string      `json:"mongodbDatabase"`
+	MongodbCollection  string      `json:"mongodbCollection"`
+	ConsumerHL7Configs []HL7Config `bson:"hl7Config"`
 
 } 
 
@@ -64,13 +65,18 @@ func main() {
     }
 
     fmt.Printf("Configuración cargada: %+v\n", config)
+    var wg sync.WaitGroup
 
-	// Obtener datos del paciente desde RabbitMQ
-	err = consumeRecords()
-	if err != nil {
-		fmt.Printf("Error recuperando registros del HIS: %v\n", err)
-		return
-	}
+    for _, cfg := range config.ConsumerHL7Configs {
+        wg.Add(1) // Incrementa el contador del WaitGroup
+        go consumeRecords(&wg, cfg)
+    }
+    // wg.Add(2) // Indicar que hay una gorutina más
+	// // Obtener datos del paciente desde RabbitMQ
+	// go consumeRecords(&wg)
+    // go produceRecords(&wg)
+
+    wg.Wait() // Esperar a que todas las gorutinas terminen
 
 }
 

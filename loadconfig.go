@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"context"
+	"strings"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -35,8 +36,9 @@ func loadConfig() (error) {
 	config.RabbitmqURI = viper.GetString("rabbitmqURI")
 	config.MongodbDatabase = viper.GetString("mongodbDatabase")
 	config.MongodbCollection = viper.GetString("mongodbCollection")
-	config.QueueName = viper.GetString("queueName")
-	
+	consumerQueueNames := viper.GetString("consumerQueueNames")
+	config.ConsumerQueueNames = strings.Split(consumerQueueNames, ",")
+
 	ctx := context.Background()
 	// Conectar a MongoDB
 	// credential := options.Credential{
@@ -53,12 +55,19 @@ func loadConfig() (error) {
 
 	collection := client.Database(config.MongodbDatabase).Collection(config.MongodbCollection)
 
-    filter := bson.M{"queueName": config.QueueName}
+	for _, queueName := range config.ConsumerQueueNames {
+		var hl7Config HL7Config
+		filter := bson.M{"queueName": queueName}
 
-	err = collection.FindOne(ctx, filter).Decode(&config.HL7Config)
-	if err != nil {
-		return fmt.Errorf("Error recuperando la configuración: %v", err)
-	}
+		// Buscar la configuración para la cola actual
+		err := collection.FindOne(ctx, filter).Decode(&hl7Config)
+		if err != nil {
+			return fmt.Errorf("Error recuperando la configuración para la cola %s: %v", queueName, err)
+		}
+
+		// Agregar la configuración encontrada al slice de configuraciones
+		config.ConsumerHL7Configs = append(config.ConsumerHL7Configs, hl7Config)
+	}	
 
 	return nil
 }
