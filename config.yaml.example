@@ -1,0 +1,7 @@
+##use localhost if you want to run app outside docker compose
+rabbitmqURI: "amqp://guest:guest@localhost:5672/"
+mongodbURI: "mongodb://appuser:appsecret@localhost:27017/hospital"
+mongodbDatabase: "hospital"
+mongodbCollection: "hl7v2config"
+queueName: "adt04mosaiq"
+
