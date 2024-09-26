@@ -3,30 +3,28 @@ package main
 import (
     "fmt"
 //    "log"
+    "os"
     "strings"
 	"time"
 )
 
-// const (
-// 	fileName = "hl7_message.txt"
-// )
-// // Function to write the HL7 message to a file
-// func writeHL7ToFile(hl7Message string) error {
-// 	// Create or open the file for writing
-// 	file, err := os.Create(fileName)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
+// Function to write the HL7 message to a file
+func writeHL7ToFile(hl7Message, fileName string) error {
+	// Create or open the file for writing
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
 // 	// Write the HL7 message to the file
-// 	_, err = file.WriteString(hl7Message)
-// 	if err != nil {
-// 		return err
-// 	}
+	_, err = file.WriteString(hl7Message)
+	if err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // Helper function to retrieve values from the Record based on the hierarchical path
 func getValueFromPath(record HealthRecord, path []string) (interface{}, bool) {
@@ -132,5 +130,12 @@ func generateHL7(mapping Mapping, hisRecord HealthRecord) string {//*bytes.Buffe
         hl7Message.WriteString("\r")
     }
 	//return &hl7Message
+    writeHL7ToFile(hl7Message.String(), "hl7_message.txt")
+    lines := strings.Split(hl7Message.String(), "\r")
+    for _, line := range lines {
+        if line != "" { // Verifica que no sea una línea vacía
+            fmt.Println(line)
+        }
+    }    
     return hl7Message.String()
 }

@@ -24,15 +24,15 @@ services:
   #   networks:
   #     - app-network
 
-  hisproducer:
-    container_name: hisproducer
-    build: ./test/rabbitmq-producer
-    restart: always
-    depends_on:
-      - rabbitmq
-      - mongodb
-    networks:
-      - app-network
+  # hisproducer:
+  #   container_name: hisproducer
+  #   build: ./test/rabbitmq-producer
+  #   restart: always
+  #   depends_on:
+  #     - rabbitmq
+  #     - mongodb
+  #   networks:
+  #     - app-network
 
   # andeshl7sender:
   #   container_name: hl7sender

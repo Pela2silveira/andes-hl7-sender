@@ -39,7 +39,11 @@ func loadConfig() (error) {
 	
 	ctx := context.Background()
 	// Conectar a MongoDB
-	clientOptions := options.Client().ApplyURI(config.MongodbURI)
+	// credential := options.Credential{
+	// 	Username: "hl7v2consumer",
+	// 	Password: "zEr6l2U8Um",
+	// }
+	clientOptions := options.Client().ApplyURI(config.MongodbURI) //.SetAuth(credential)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return fmt.Errorf("Error conectando a MongoDB: %v", err)

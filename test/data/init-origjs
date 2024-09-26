@@ -28,7 +28,7 @@ db.config.insert({
                     {
                         "field": "sending_application",
                         "component": [0, 1],
-                        "default": "Andes"
+                        "default": "ANDES"
                     },
                     {
                         "field": "sending_facility",

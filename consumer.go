@@ -7,7 +7,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"strings"
 	"time"
-	"bufio"
+	"errors"
+	"bytes"
+	//"bufio"
 
 )
 
@@ -16,7 +18,22 @@ const (
     MLLPStartBlock = byte(0x0b) // <VT>
     MLLPEndBlock1  = byte(0x1c) // <FS>
     MLLPEndBlock2  = byte(0x0d) // <CR>
+	MLLPEmpty      = byte(0x00) // <CR>
 )
+
+func cleanMLLP(buffer string) string {
+	// Remover caracteres de control específicos del protocolo MLLP
+	cleaned := strings.Map(func(r rune) rune {
+		// Remover MLLP delimiters (0x0b, 0x1c, 0x0d)
+		if byte(r) == MLLPStartBlock || byte(r) == MLLPEndBlock1 || byte(r) == MLLPEndBlock2 || byte(r) == MLLPEmpty {
+			return -1
+		}
+		// Dejar otros caracteres, incluyendo saltos de línea
+		return r
+	}, buffer)
+
+	return cleaned
+}
 
 func sendHL7Message(destination string, port int, message string) (string, error) {
     // Establecer conexión TCP al servidor HL7
@@ -46,21 +63,21 @@ func sendHL7Message(destination string, port int, message string) (string, error
 
     // Esperar y leer la respuesta del servidor
     conn.SetReadDeadline(time.Now().Add(5 * time.Second)) // Timeout de lectura
-    response, err := bufio.NewReader(conn).ReadString(MLLPEndBlock2)
+	response := make([]byte, 1024) // Tamaño del buffer
+	_, err = conn.Read(response)
     if err != nil {
         return "", fmt.Errorf("error al recibir respuesta: %v", err)
-    }
-
-    // Remover delimitadores MLLP de la respuesta
-    response = strings.TrimPrefix(response, string(MLLPStartBlock))
-    response = strings.TrimSuffix(response, string(MLLPEndBlock1)+string(MLLPEndBlock2))
-
-    // Verificar si la respuesta es un ACK
-    if strings.Contains(response, "MSA|AA") {
-        return "ACK recibido", nil
     } else {
-        return fmt.Sprintf("Respuesta no ACK recibida: %s", response), nil
-    }
+		containsMSH := bytes.Contains(response, []byte("MSH"))
+		containsMSA := bytes.Contains(response, []byte("MSA"))
+		cleanedBuffer := cleanMLLP(string(response))
+		writeHL7ToFile(string(cleanedBuffer), "hl7_response.txt")
+		if containsMSA && containsMSH {
+			return cleanedBuffer, nil
+		} else {
+			return cleanedBuffer, errors.New("Error del servidor")
+		}
+	}
 }
 
 func consumeRecords() (error) {

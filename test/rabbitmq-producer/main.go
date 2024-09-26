@@ -20,7 +20,7 @@ const (
 	mongoDatabase   = "hospital"
 	mongoCollection = "patients"
 	rabbitmqURI     = "amqp://guest:guest@rabbitmq:5672/"
-	queueName       = "mosaiq"
+	queueName       = "adt04mosaiq"
 )
 
 func main() {
