@@ -1,82 +1,87 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "sync"
+	"context"
+	"log"
+	"sync"
+	"time"
 )
 
-// El registro de salud tiene formato libre
-type HealthRecord map[string]interface{}
-
-
-type HL7Destination struct {
-	IPAddress string `bson:"ipAddress"`
-	Port      int    `bson:"port"`
-}
-
-type Config struct {
-    RabbitmqURI        string      `json:"rabbitmqURI"` 
-	ConsumerQueueNames []string    `json:"consumerQueueNames"`
-	MongodbURI         string      `json:"mongodbURI"`
-	MongodbDatabase    string      `json:"mongodbDatabase"`
-	MongodbCollection  string      `json:"mongodbCollection"`
-	ConsumerHL7Configs []HL7Config `bson:"hl7Config"`
-
-} 
-
-type HL7Config struct {
-    QueueName       string           `bson:"queueName"`
-    HL7Destinations []HL7Destination `bson:"hl7Destinations"`
-    Mapping         Mapping          `bson:"mapping"`
-}
-
-type Mapping struct {
-    Format     string     `bson:"format"`
-    Delimiters Delimiters `bson:"delimiters"`
-    Mappings   []Segment  `bson:"mappings"` // Cambiado a una lista
-}
-
-type Delimiters struct {
-    FieldSeparator        string `bson:"fieldSeparator"`
-    ComponentSeparator    string `bson:"componentSeparator"`
-    SubcomponentSeparator string `bson:"subcomponentSeparator"`
-    EscapeCharacter       string `bson:"escapeCharacter"`
-    RepetitionCharacter   string `bson:"repetitionCharacter"`
-    SegmentSeparator      string `bson:"segmentSeparator"`
-}
-
-type Segment struct {
-    Segment string  `bson:"segment"` // Este campo debe existir
-    Values  []Field `bson:"values"`
-}
-
-type Field struct {
-    Field     string `bson:"field"`
-    Component []int  `bson:"component"`
-    Default   string `bson:"default,omitempty"`
-}
-
 func main() {
+	err := initConfigAndMongoDB()
+	if err != nil {
+		log.Fatalf("FATAL: Error fatal al inicializar configuración y MongoDB: %v", err)
+	}
+	// Asegurar que el cliente de MongoDB se desconecte al salir de main
+	defer func() {
+		if mongoClient != nil {
+			log.Println("INFO: Desconectando de MongoDB...")
+			mongoClient.Disconnect(context.Background())
+		}
+	}()
 
-    err := loadConfig()
-    if err != nil {
-        log.Fatalf("Error cargando configuración: %v", err)
-    }
+	// Crea un contexto para un apagado elegante de goroutines de larga duración (productores)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Asegura que se llame a cancel cuando main salga
 
-    fmt.Printf("Configuración cargada: %+v\n", config)
-    var wg sync.WaitGroup
+	// Carga la configuración inicial para iniciar los productores
+	err = loadConfig()
+	if err != nil {
+		log.Fatalf("FATAL: Error fatal al cargar configuración inicial para productores: %v", err)
+	}
 
-    for _, cfg := range config.ConsumerHL7Configs {
-        wg.Add(1) // Incrementa el contador del WaitGroup
-        go consumeRecords(&wg, cfg)
-    }
-    // wg.Add(2) // Indicar que hay una gorutina más
-	// // Obtener datos del paciente desde RabbitMQ
-	// go consumeRecords(&wg)
-    // go produceRecords(&wg)
+	// Inicia las goroutines de Productores (Listeners) de larga duración UNA SOLA VEZ
+	// Estas goroutines deberían ejecutarse indefinidamente hasta que la aplicación se apague.
+	var producerLongRunningWG sync.WaitGroup
+	for _, cfg := range config.ProducerHL7Configs {
+		producerLongRunningWG.Add(1)
+		go func(cfg HL7Config) {
+			defer producerLongRunningWG.Done() // Este Done() se llama cuando la goroutine anónima sale
+			produceRecords(ctx, cfg)           // produceRecords en sí NO llama a wg.Done()
+		}(cfg)
+	}
 
-    wg.Wait() // Esperar a que todas las gorutinas terminen
+	// Bucle principal para tareas periódicas: recargar la configuración e iniciar consumidores por lotes
+	for {
+		// Recarga periódicamente la configuración para los consumidores
+		err := loadConfig()
+		if err != nil {
+			log.Printf("ERROR: Error cargando configuración para consumidores: %v. Reintentando en 5 segundos...\n", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 
+		log.Printf("INFO: Configuración cargada y lista. Iniciando procesamiento de mensajes de consumo...\n")
+
+		var consumerWG sync.WaitGroup // Este WaitGroup está correctamente dentro del alcance de esta iteración del bucle interno
+
+		// Procesa las configuraciones HL7 del Consumidor (procesamiento por lotes)
+		for _, cfg := range config.ConsumerHL7Configs {
+			consumerWG.Add(1)
+			go func(cfg HL7Config) {
+				// printHL7ConfigLog(cfg)
+				defer consumerWG.Done() // Este Done() se llama cuando la goroutine anónima sale
+				consumeRecords(cfg)     // consumeRecords en sí NO llama a wg.Done()
+			}(cfg)
+		}
+
+		consumerWG.Wait() // Espera a que todas las goroutines de procesamiento por lotes terminen
+
+		log.Println("INFO: Todos los mensajes batch procesados. Re-evaluando en 30 segundos...")
+		// Introduce un retardo antes de volver a leer la configuración e iniciar nuevos consumidores por lotes
+		time.Sleep(30 * time.Second)
+	}
+
+	// En una aplicación real, es posible que desees esperar aquí a producerLongRunningWG
+	// antes de que main salga realmente, especialmente si manejas señales del sistema operativo para el apagado.
+	// producerLongRunningWG.Wait()
 }
 
+// func printHL7ConfigLog(cfg HL7Config) {
+// 	jsonBytes, err := json.MarshalIndent(cfg, "", "  ")
+// 	if err != nil {
+// 		log.Printf("Error marshaling HL7Config: %v", err)
+// 		return
+// 	}
+// 	log.Println("HL7Config content:\n", string(jsonBytes))
+// }

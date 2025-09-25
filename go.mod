@@ -1,14 +1,16 @@
 module pela/andes-hl7-andes
 
-go 1.18
+go 1.24
 
 require (
-	github.com/rabbitmq/amqp091-go v1.10.0
+	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/spf13/viper v1.16.0
 	go.mongodb.org/mongo-driver v1.16.1
+	golang.org/x/text v0.14.0
 )
 
 require (
+	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -29,7 +31,6 @@ require (
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
